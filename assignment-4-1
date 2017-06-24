@@ -1,0 +1,106 @@
+#include <vector>
+using namespace std;
+
+vector<int> parents;
+vector<int> ranks;
+
+/* creates a disjoint set for each tile on the map */
+void create_disjoint_sets(int rows, int columns) {
+    parents.resize(rows * columns);
+    
+    //each tile is its own disjoint set so it is its own parent
+    
+    for (int i = 0; i < rows * columns; i++) {
+        parents[i] = i;
+    }
+}
+
+/*sets the ranks of all disjoint sets to 0*/
+void initialize_set_ranks(int rows, int columns) {
+    ranks.resize(rows * columns, 0);
+    
+}
+
+/* finds a tile's set parent */
+int find_parent(int tile) {
+    if (parents[tile] == tile) {
+        return tile;
+    }
+    return parents[tile] = find_parent(parents[tile]);
+}
+
+/* union of the sets of 2 tiles */
+void set_union(int tile1, int tile2) {
+    int tile1_parent = find_parent(tile1);
+    int tile2_parent = find_parent(tile2);
+    
+    if (tile1_parent == tile2_parent) {
+        return;
+    }
+    if (ranks[tile1_parent] == ranks[tile2_parent]) {
+        parents[tile2_parent] = tile1_parent;
+        ranks[tile1_parent]++;
+    } else if (ranks[tile1_parent] > ranks[tile2_parent]) {
+        parents[tile2_parent] = tile1_parent;
+    } else {
+        parents[tile1_parent] = tile2_parent;
+    }
+}
+
+/* returns x coordinate of tile on the map given its unique number */
+int coordX(int curr_tile_id, int cols) {
+    return curr_tile_id / cols;
+}
+
+/* returns y coordinate of tile on the map given its unique number */
+int coordY(int curr_tile_id, int cols) {
+    return curr_tile_id % cols;
+}
+
+/* looks for an island next to the current tile to add it */
+void find_neighbour_island(int curr_tile, int rows, int cols, bool **tiles) {
+    
+    int i = coordX(curr_tile, cols);
+    int j = coordY(curr_tile, cols);
+    
+    if (!tiles[i][j]) {
+        return;
+    }
+    
+    /* only need to look at neighbour tiles that have already been checked so the 1 in the row above and the 1 on the left */
+    if (i - 1 >= 0 && tiles[i - 1][j]) {
+        int tile_above = curr_tile - cols;
+        set_union(curr_tile, tile_above);    }
+    if (j - 1 >= 0 && tiles[i][j - 1]) {
+        int left_tile = curr_tile - 1;
+        set_union(curr_tile, left_tile);
+    }
+    
+}
+
+/* finds how many islands there are */
+int islands(int rows, int cols, bool **tiles) {
+    int res = 0;
+    
+    create_disjoint_sets(rows, cols);
+    initialize_set_ranks(rows, cols);
+    
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            int curr_tile_id = i * cols + j;
+            find_neighbour_island(curr_tile_id, rows, cols, tiles);
+        }
+    }
+    
+    /* count how many disjoint sets of True tiles there are */
+    
+    for (int i = 0; i < rows * cols; i++) {
+        int curr_coordx = coordX(i, cols);
+        int curr_coordy = coordY(i, cols);
+        if (parents[i] == i && tiles[curr_coordx][curr_coordy]) {
+            res++;
+        }
+    }
+    
+    return res;
+}
